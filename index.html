@@ -47,7 +47,8 @@
         // Acessar a câmera
         Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
-                scanner.start(cameras[0]);
+                let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back')) || cameras[0];
+        scanner.start(backCamera);
             } else {
                 console.error('Nenhuma câmera encontrada.');
             }
