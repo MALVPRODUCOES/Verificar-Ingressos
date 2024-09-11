@@ -7,8 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
         #preview {
-            width: 100%;
-            height: auto;
+            width: 400px;
+            height: 300px;
             border: 1px solid black;
             margin-bottom: 20px;
         }
@@ -18,14 +18,21 @@
         }
         .valid { color: green; }
         .invalid { color: red; }
+        #readAnother {
+            display: none;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <h1>Scanner de QR Code</h1>
     <div id="preview"></div>
     <div id="result"></div> <!-- Área para exibir as mensagens -->
+    <button id="readAnother">Ler Outro QR Code</button> <!-- Botão para ler outro QR Code -->
 
     <script>
+        const html5QrCode = new Html5Qrcode("preview");
+        
         function isCodeValid(code) {
             const validatedCodes = JSON.parse(localStorage.getItem('validatedCodes')) || [];
             return validatedCodes.includes(code);
@@ -48,24 +55,31 @@
             resultElement.className = isValid ? 'valid' : 'invalid';
         }
 
-        const html5QrCode = new Html5Qrcode("preview");
+        function startScanning() {
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10 }, onScanSuccess, onScanFailure);
+            document.getElementById('readAnother').style.display = 'none'; // Esconde o botão quando o scanner está ativo
+        }
 
-        function onScanSuccess(decodedText, decodedResult) {
-            // Interrompe o scanner se o QR code for lido com sucesso
+        function stopScanning() {
             html5QrCode.stop().then(() => {
-                if (isInRange(decodedText)) {
-                    if (!isCodeValid(decodedText)) {
-                        showMessage('Ingresso Válido', true);
-                        storeValidatedCode(decodedText);
-                    } else {
-                        showMessage('Ingresso Inválido: já lido anteriormente', false);
-                    }
-                } else {
-                    showMessage('Ingresso Inválido: fora do intervalo válido', false);
-                }
+                document.getElementById('readAnother').style.display = 'block'; // Mostra o botão quando o scanner é parado
             }).catch(err => {
                 console.error('Erro ao parar o scanner: ', err);
             });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            if (isInRange(decodedText)) {
+                if (!isCodeValid(decodedText)) {
+                    showMessage('Ingresso Válido', true);
+                    storeValidatedCode(decodedText);
+                } else {
+                    showMessage('Ingresso Inválido: já lido anteriormente', false);
+                }
+            } else {
+                showMessage('Ingresso Inválido: fora do intervalo válido', false);
+            }
+            stopScanning(); // Para o scanner após uma leitura bem-sucedida
         }
 
         function onScanFailure(error) {
@@ -75,8 +89,7 @@
         // Inicializa o scanner
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length) {
-                const cameraId = devices[0].id;
-                html5QrCode.start({ facingMode: "environment" }, { fps: 10 }, onScanSuccess, onScanFailure);
+                startScanning();
             } else {
                 console.error('Nenhuma câmera encontrada.');
                 alert('Nenhuma câmera encontrada.');
@@ -84,6 +97,11 @@
         }).catch(err => {
             console.error('Erro ao acessar a câmera: ', err);
             alert('Erro ao acessar a câmera: ' + err);
+        });
+
+        // Configura o botão para ler outro QR Code
+        document.getElementById('readAnother').addEventListener('click', function() {
+            startScanning(); // Reinicia o scanner
         });
     </script>
 </body>
