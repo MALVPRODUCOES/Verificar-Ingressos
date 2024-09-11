@@ -5,10 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Validador de QR Code</title>
     <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    max-width: 100%;
+}
+
+h1 {
+    font-size: 1.5rem;
+}
+
+#preview {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    border: 1px solid black;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 1.2rem;
+}
+    </style>   
 </head>
 <body>
     <h1>Escaneie seu QR Code</h1>
-    <video id="preview" width="400" height="300" style="border: 1px solid black;"></video>
+    <video id="preview" style="width: 100%; max-width: 400px; height: auto; border: 1px solid black;"></video>
     
     <div id="result"></div>
 
