@@ -7,8 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
         #preview {
-            width: 400px;
-            height: 300px;
+            width: 100%;
+            height: auto;
             border: 1px solid black;
             margin-bottom: 20px;
         }
@@ -51,20 +51,25 @@
         const html5QrCode = new Html5Qrcode("preview");
 
         function onScanSuccess(decodedText, decodedResult) {
-            if (isInRange(decodedText)) {
-                if (!isCodeValid(decodedText)) {
-                    showMessage('Ingresso Válido', true);
-                    storeValidatedCode(decodedText);
+            // Interrompe o scanner se o QR code for lido com sucesso
+            html5QrCode.stop().then(() => {
+                if (isInRange(decodedText)) {
+                    if (!isCodeValid(decodedText)) {
+                        showMessage('Ingresso Válido', true);
+                        storeValidatedCode(decodedText);
+                    } else {
+                        showMessage('Ingresso Inválido: já lido anteriormente', false);
+                    }
                 } else {
-                    showMessage('Ingresso Inválido: já lido anteriormente', false);
+                    showMessage('Ingresso Inválido: fora do intervalo válido', false);
                 }
-            } else {
-                showMessage('Ingresso Inválido: fora do intervalo válido', false);
-            }
+            }).catch(err => {
+                console.error('Erro ao parar o scanner: ', err);
+            });
         }
 
         function onScanFailure(error) {
-            console.error(error);
+            console.error('Erro de leitura do QR Code: ', error);
         }
 
         // Inicializa o scanner
@@ -77,7 +82,7 @@
                 alert('Nenhuma câmera encontrada.');
             }
         }).catch(err => {
-            console.error(err);
+            console.error('Erro ao acessar a câmera: ', err);
             alert('Erro ao acessar a câmera: ' + err);
         });
     </script>
