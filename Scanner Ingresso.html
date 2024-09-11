@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitura de QR Code com LocalStorage</title>
+    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #preview {
+            width: 100%;
+            height: auto;
+            border: 1px solid #000;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        
+        #history {
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .qr-code {
+            color: green;
+        }
+
+        .qr-code.invalid {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Leitura de QR Code com LocalStorage</h1>
+    <video id="preview"></video>
+    <div id="result">Aguardando QR code...</div>
+    <div id="history">
+        <h2>Histórico de QR Codes:</h2>
+        <ul id="qrList"></ul>
+    </div>
+
+    <script>
+        // Inicializa o scanner de QR code
+        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+
+        // Função para salvar no localStorage
+        function saveToLocalStorage(content) {
+            let qrCodes = JSON.parse(localStorage.getItem('qrCodes')) || [];
+            // Verifica se o QR code já foi escaneado
+            if (qrCodes.includes(content)) {
+                return false; // QR code já lido
+            }
+            // Adiciona o QR code à lista e salva no localStorage
+            qrCodes.push(content);
+            localStorage.setItem('qrCodes', JSON.stringify(qrCodes));
+            return true; // QR code novo
+        }
+
+        // Função para exibir a lista de QR codes no histórico
+        function showHistory() {
+            let qrCodes = JSON.parse(localStorage.getItem('qrCodes')) || [];
+            let qrList = document.getElementById('qrList');
+            qrList.innerHTML = ''; // Limpa a lista antes de atualizar
+            qrCodes.forEach(code => {
+                let li = document.createElement('li');
+                li.textContent = code;
+                li.classList.add('qr-code');
+                qrList.appendChild(li);
+            });
+        }
+
+        // Configura o evento de leitura de QR code
+        scanner.addListener('scan', function (content) {
+            let resultDiv = document.getElementById('result');
+            if (saveToLocalStorage(content)) {
+                resultDiv.innerHTML = 'Ingresso Válido';
+                resultDiv.className = 'qr-code';
+            } else {
+                resultDiv.innerHTML = 'Ingresso Inválido';
+                resultDiv.className = 'qr-code invalid';
+            }
+            showHistory(); // Atualiza o histórico de QR codes
+        });
+
+        // Inicializa a câmera
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]); // Usar a câmera traseira
+            } else {
+                console.error('Nenhuma câmera encontrada.');
+                document.getElementById('result').innerHTML = 'Nenhuma câmera foi encontrada.';
+            }
+        }).catch(function (e) {
+            console.error(e);
+            document.getElementById('result').innerHTML = 'Erro ao acessar a câmera: ' + e;
+        });
+
+        // Mostrar o histórico de QR codes salvos quando a página carrega
+        showHistory();
+    </script>
+</body>
+</html>
