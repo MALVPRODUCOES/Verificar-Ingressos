@@ -41,6 +41,7 @@
 
         // Função para verificar se o QR code está na faixa válida (00100 a 00600)
         function isInRange(code) {
+            // Verifica se o QR code é um número válido e está no intervalo de 00100 a 00600
             const number = parseInt(code, 10); // Converte o código para número
             return number >= 100 && number <= 600;
         }
