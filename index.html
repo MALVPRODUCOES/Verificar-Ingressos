@@ -1,84 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validador de QR Code</title>
-    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <title>QR Code Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
-        body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 0;
-    padding: 20px;
-    max-width: 100%;
-}
-
-h1 {
-    font-size: 1.5rem;
-}
-
-#preview {
-    width: 100%;
-    max-width: 400px;
-    height: auto;
-    border: 1px solid black;
-}
-
-#result {
-    margin-top: 20px;
-    font-size: 1.2rem;
-}
-    </style>   
+        #reader { width: 100%; }
+        #result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .valid { color: green; }
+        .invalid { color: red; }
+    </style>
 </head>
 <body>
-    <h1>Escaneie seu QR Code</h1>
-    <video id="preview" style="width: 100%; max-width: 400px; height: auto; border: 1px solid black;"></video>
-    
-    <div id="result"></div>
+    <h1>Scanner de QR Code</h1>
+    <div id="reader" width="600px"></div>
+    <div id="result"></div> <!-- Área para exibir as mensagens -->
 
     <script>
-        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+        // Função para verificar se o QR code já foi validado
+        function isCodeValid(code) {
+            const validatedCodes = JSON.parse(localStorage.getItem('validatedCodes')) || [];
+            return validatedCodes.includes(code);
+        }
 
-        scanner.addListener('scan', function (content) {
-            console.log('QR code detectado: ', content);
-            // Enviar o QR code para o servidor
-            fetch('/validate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ qr_code: content }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Resposta do servidor:', data);
-                const resultDiv = document.getElementById('result');
-                if (data.status === 'valid') {
-                    resultDiv.innerHTML = '<p style="color:green">Ingresso válido!</p>';
-                } else if (data.status === 'invalid') {
-                    resultDiv.innerHTML = '<p style="color:red">Ingresso já utilizado!</p>';
-                } else if (data.status === 'not_found') {
-                    resultDiv.innerHTML = '<p style="color:orange">Ingresso não encontrado!</p>';
+        // Função para armazenar o QR code validado
+        function storeValidatedCode(code) {
+            let validatedCodes = JSON.parse(localStorage.getItem('validatedCodes')) || [];
+            validatedCodes.push(code);
+            localStorage.setItem('validatedCodes', JSON.stringify(validatedCodes));
+        }
+
+        // Função para verificar se o QR code está na faixa válida (00100 a 00600)
+        function isInRange(code) {
+            const number = parseInt(code, 10); // Converte o código para número
+            return number >= 100 && number <= 600;
+        }
+
+        // Função para exibir mensagens na tela
+        function showMessage(message, isValid) {
+            const resultElement = document.getElementById('result');
+            resultElement.textContent = message;
+            resultElement.className = isValid ? 'valid' : 'invalid';
+        }
+
+        // Inicialize o scanner
+        function onScanSuccess(qrCodeMessage) {
+            // Verifica se o QR code está dentro do intervalo e se não foi lido antes
+            if (isInRange(qrCodeMessage)) {
+                if (!isCodeValid(qrCodeMessage)) {
+                    showMessage('Ingresso Válido', true);
+                    storeValidatedCode(qrCodeMessage);
                 } else {
-                    resultDiv.innerHTML = '<p style="color:red">Erro ao validar o ingresso!</p>';
+                    showMessage('Ingresso Inválido: já lido anteriormente', false);
                 }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-            });
-        });
-
-        // Acessar a câmera
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back')) || cameras[1];
-        scanner.start(backCamera);
             } else {
-                console.error('Nenhuma câmera encontrada.');
+                showMessage('Ingresso Inválido: fora do intervalo válido', false);
             }
-        }).catch(function (e) {
-            console.error(e);
+        }
+
+        function onScanError(errorMessage) {
+            // Pode adicionar tratamento de erro aqui
+        }
+
+        const html5QrCode = new Html5Qrcode("reader");
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: 250
+            },
+            onScanSuccess,
+            onScanError
+        ).catch(err => {
+            console.error("Erro ao iniciar o scanner QR:", err);
         });
     </script>
 </body>
