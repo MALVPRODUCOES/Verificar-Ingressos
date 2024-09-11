@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <title>QR Code Scanner com InstaScan</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/instascan/1.0.0/instascan.min.js"></script>
     <style>
-        #reader { width: 100%; }
         #result {
             margin-top: 20px;
             font-size: 20px;
@@ -18,7 +17,7 @@
 </head>
 <body>
     <h1>Scanner de QR Code</h1>
-    <div id="reader" width="600px"></div>
+    <video id="preview" width="100%"></video>
     <div id="result"></div> <!-- Área para exibir as mensagens -->
 
     <script>
@@ -48,8 +47,11 @@
             resultElement.className = isValid ? 'valid' : 'invalid';
         }
 
-        // Inicialize o scanner
-        function onScanSuccess(qrCodeMessage) {
+        // Inicializando o scanner InstaScan
+        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+
+        // Evento disparado quando um QR code é escaneado
+        scanner.addListener('scan', function (qrCodeMessage) {
             // Verifica se o QR code está dentro do intervalo e se não foi lido antes
             if (isInRange(qrCodeMessage)) {
                 if (!isCodeValid(qrCodeMessage)) {
@@ -61,24 +63,19 @@
             } else {
                 showMessage('Ingresso Inválido: fora do intervalo válido', false);
             }
-        }
+        });
 
-        function onScanError(errorMessage) {
-            // Pode adicionar tratamento de erro aqui
-        }
-
-        const html5QrCode = new Html5Qrcode("reader");
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            {
-                fps: 10,
-                qrbox: 250
-            },
-            onScanSuccess,
-            onScanError
-        ).catch(err => {
-            console.error("Erro ao iniciar o scanner QR:", err);
+        // Solicita permissões da câmera e começa o scanner
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]); // Usa a primeira câmera disponível (geralmente a traseira)
+            } else {
+                console.error('Nenhuma câmera encontrada.');
+                alert('Nenhuma câmera encontrada.');
+            }
+        }).catch(function (e) {
+            console.error(e);
+            alert('Erro ao acessar a câmera: ' + e);
         });
     </script>
 </body>
