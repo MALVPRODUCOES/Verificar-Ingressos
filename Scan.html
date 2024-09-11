@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de QR Code</title>
+    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+</head>
+<body>
+    <h1>Escaneie seu QR Code</h1>
+    <video id="preview" width="400" height="300" style="border: 1px solid black;"></video>
+    
+    <div id="result"></div>
+
+    <script>
+        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+
+        scanner.addListener('scan', function (content) {
+            console.log('QR code detectado: ', content);
+            // Enviar o QR code para o servidor
+            fetch('/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ qr_code: content }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Resposta do servidor:', data);
+                const resultDiv = document.getElementById('result');
+                if (data.status === 'valid') {
+                    resultDiv.innerHTML = '<p style="color:green">Ingresso válido!</p>';
+                } else if (data.status === 'invalid') {
+                    resultDiv.innerHTML = '<p style="color:red">Ingresso já utilizado!</p>';
+                } else if (data.status === 'not_found') {
+                    resultDiv.innerHTML = '<p style="color:orange">Ingresso não encontrado!</p>';
+                } else {
+                    resultDiv.innerHTML = '<p style="color:red">Erro ao validar o ingresso!</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+            });
+        });
+
+        // Acessar a câmera
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
+            } else {
+                console.error('Nenhuma câmera encontrada.');
+            }
+        }).catch(function (e) {
+            console.error(e);
+        });
+    </script>
+</body>
+</html>
