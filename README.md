@@ -1,1 +1,1 @@
-# qr-code-reader
+# Verificar Ingressos
