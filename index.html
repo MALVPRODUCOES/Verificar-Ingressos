@@ -7,8 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/instascan/1.0.0/instascan.min.js"></script>
     <style>
         #preview {
-            width: 100%;
-            height: auto;
+            width: 400px;
+            height: 300px;
             border: 1px solid black;
             margin-bottom: 20px;
         }
@@ -22,10 +22,15 @@
 </head>
 <body>
     <h1>Scanner de QR Code</h1>
+    
+    <select id="cameraSelect"></select> <!-- Dropdown para seleção de câmera -->
     <video id="preview"></video>
     <div id="result"></div> <!-- Área para exibir as mensagens -->
 
     <script>
+        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+        const cameraSelect = document.getElementById('cameraSelect');
+
         // Função para verificar se o QR code já foi validado
         function isCodeValid(code) {
             const validatedCodes = JSON.parse(localStorage.getItem('validatedCodes')) || [];
@@ -41,7 +46,6 @@
 
         // Função para verificar se o QR code está na faixa válida (00100 a 00600)
         function isInRange(code) {
-            // Verifica se o QR code é um número válido e está no intervalo de 00100 a 00600
             const number = parseInt(code, 10); // Converte o código para número
             return number >= 100 && number <= 600;
         }
@@ -52,9 +56,6 @@
             resultElement.textContent = message;
             resultElement.className = isValid ? 'valid' : 'invalid';
         }
-
-        // Inicializando o scanner InstaScan
-        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
 
         // Evento disparado quando um QR code é escaneado
         scanner.addListener('scan', function (qrCodeMessage) {
@@ -71,10 +72,41 @@
             }
         });
 
-        // Solicita permissões da câmera e começa o scanner
+        // Função para iniciar a câmera selecionada
+        function startCamera(cameraId) {
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    // Encontra a câmera pelo ID selecionado
+                    let selectedCamera = cameras.find(camera => camera.id === cameraId);
+                    if (selectedCamera) {
+                        scanner.start(selectedCamera);
+                    } else {
+                        console.error('Câmera selecionada não encontrada.');
+                    }
+                } else {
+                    console.error('Nenhuma câmera encontrada.');
+                    alert('Nenhuma câmera encontrada.');
+                }
+            }).catch(function (e) {
+                console.error(e);
+                alert('Erro ao acessar a câmera: ' + e);
+            });
+        }
+
+        // Listar as câmeras disponíveis
         Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
-                scanner.start(cameras[0]); // Usa a primeira câmera disponível (geralmente a traseira)
+                cameras.forEach(camera => {
+                    let option = document.createElement('option');
+                    option.value = camera.id;
+                    option.text = camera.name || `Câmera ${camera.id}`;
+                    cameraSelect.appendChild(option);
+                });
+
+                // Inicia com a primeira câmera disponível
+                if (cameras[0]) {
+                    startCamera(cameras[0].id);
+                }
             } else {
                 console.error('Nenhuma câmera encontrada.');
                 alert('Nenhuma câmera encontrada.');
@@ -82,6 +114,11 @@
         }).catch(function (e) {
             console.error(e);
             alert('Erro ao acessar a câmera: ' + e);
+        });
+
+        // Evento de mudança na seleção da câmera
+        cameraSelect.addEventListener('change', function () {
+            startCamera(this.value); // Iniciar a câmera selecionada
         });
     </script>
 </body>
